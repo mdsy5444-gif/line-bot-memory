@@ -7,6 +7,7 @@ import re
 # ─ LINE チャンネルトークン・シークレット ─
 LINE_CHANNEL_ACCESS_TOKEN = 'izYoNZ6mcwwHN2dTeXOUgKBcFLd8Ly3k0nULO3jEytUogYsX6+gneQkb26a0LM4rS3cgYypfqI6TOeGUff7u+tyjAZLEtabXx1b0adHOeNbCflZXJw7pz2OaD+WIj1tKDZySb0wrcujtV+f/8p/8NwdB04t89/1O/w1cDnyilFU='
 LINE_CHANNEL_SECRET = 'c08cb0360dbddcdb084f61bb88d38a54'
+BOT_NAME = "ボット"  # グループで呼ばれるときの名前
 
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
@@ -34,7 +35,6 @@ def calculate_total(text):
             except:
                 pass
         else:
-            # 文書内の数字は無視
             if re.fullmatch(r'\d+', p):
                 total += int(p)
     return total
@@ -58,6 +58,19 @@ def handle_message(event):
     text = event.message.text.strip()
     reply = "わかりません"
 
+    # ─ グループの場合、@ボット名がないと無視 ─
+    if event.source.type == "group":
+        if not text.startswith(f"@{BOT_NAME}"):
+            return
+        text = text.replace(f"@{BOT_NAME}", "", 1).strip()
+
+    # ─ 挨拶対応 ─
+    greetings = ["こんにちは","おはよう","こんばんは","やあ","お疲れ"]
+    if any(g in text for g in greetings):
+        reply = f"{text}！"
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply))
+        return
+
     # ─ 覚える ─
     if text.startswith('覚えて！'):
         try:
@@ -68,14 +81,13 @@ def handle_message(event):
         except:
             reply = "覚える形式は「覚えて！〇〇 数字」です"
 
-    # ─ 狙い目を返す（部分一致・空白と「の」を無視） ─
+    # ─ 狙い目を返す（部分一致・空白・の無視） ─
     elif '狙い目' in text:
-        # キーを正規化
         key = text.replace('狙い目','').replace('の','').replace('　','').replace(' ','').strip()
         found = False
         for mem_key, mem_value in memory.items():
-            mem_key_norm = re.sub(r'\s|の','', mem_key)  # 覚えたキーを正規化
-            if key in mem_key_norm:  # 部分一致
+            mem_key_norm = re.sub(r'\s|の','', mem_key)
+            if key in mem_key_norm:
                 reply = mem_value
                 found = True
                 break
