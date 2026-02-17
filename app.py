@@ -16,27 +16,27 @@ app = Flask(__name__)
 # ─ メモリ（覚えた情報） ─
 memory = {}
 
-# ─ 数字計算用の関数 ─
+# ─ 数字計算用関数 ─
 def calculate_total(text):
     total = 0
-    text = text.split()
-    for t in text:
-        if t.startswith('BB'):
+    parts = text.split()
+    for p in parts:
+        if p.startswith('BB'):
             try:
-                n = int(t[2:]) if t[2:] else 1
+                n = int(p[2:]) if p[2:] else 1
                 total += 60 * n
             except:
                 pass
-        elif t.startswith('RB'):
+        elif p.startswith('RB'):
             try:
-                n = int(t[2:]) if t[2:] else 1
+                n = int(p[2:]) if p[2:] else 1
                 total += 25 * n
             except:
                 pass
         else:
             # 文書内の数字は無視
-            if re.fullmatch(r'\d+', t):
-                total += int(t)
+            if re.fullmatch(r'\d+', p):
+                total += int(p)
     return total
 
 # ─ LINE Webhook ─
@@ -68,13 +68,14 @@ def handle_message(event):
         except:
             reply = "覚える形式は「覚えて！〇〇 数字」です"
 
-    # ─ 狙い目を返す ─
-    elif 'の狙い目' in text:
-        key = text.replace('の狙い目','').strip()
-        key = key.replace('　','').replace(' ','')
+    # ─ 狙い目を返す（部分一致・空白と「の」を無視） ─
+    elif '狙い目' in text:
+        # キーを正規化
+        key = text.replace('狙い目','').replace('の','').replace('　','').replace(' ','').strip()
         found = False
         for mem_key, mem_value in memory.items():
-            if mem_key.replace('　','').replace(' ','') == key:
+            mem_key_norm = re.sub(r'\s|の','', mem_key)  # 覚えたキーを正規化
+            if key in mem_key_norm:  # 部分一致
                 reply = mem_value
                 found = True
                 break
