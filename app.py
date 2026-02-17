@@ -7,7 +7,7 @@ import re
 # ─ LINE チャンネルトークン・シークレット ─
 LINE_CHANNEL_ACCESS_TOKEN = 'izYoNZ6mcwwHN2dTeXOUgKBcFLd8Ly3k0nULO3jEytUogYsX6+gneQkb26a0LM4rS3cgYypfqI6TOeGUff7u+tyjAZLEtabXx1b0adHOeNbCflZXJw7pz2OaD+WIj1tKDZySb0wrcujtV+f/8p/8NwdB04t89/1O/w1cDnyilFU='
 LINE_CHANNEL_SECRET = 'c08cb0360dbddcdb084f61bb88d38a54'
-BOT_NAME = "ボット"  # グループで呼ばれるときの名前
+BOT_NAME = "しゃっちゃん"  # グループで呼ばれるときの名前
 
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
@@ -58,11 +58,15 @@ def handle_message(event):
     text = event.message.text.strip()
     reply = "わかりません"
 
-    # ─ グループの場合、@ボット名がないと無視 ─
+    # ─ グループの場合、@ボット名 が含まれていないと無視 ─
     if event.source.type == "group":
-        if not text.startswith(f"@{BOT_NAME}"):
-            return
-        text = text.replace(f"@{BOT_NAME}", "", 1).strip()
+        # 空白を削除して正規化
+        text_norm = text.replace("　","").replace(" ","")
+        bot_mention_norm = f"@{BOT_NAME}".replace("　","").replace(" ","")
+        if bot_mention_norm not in text_norm:
+            return  # 反応しない
+        # メンションを削除して本文だけにする
+        text = re.sub(f"@{BOT_NAME}", "", text, count=1).strip()
 
     # ─ 挨拶対応 ─
     greetings = ["こんにちは","おはよう","こんばんは","やあ","お疲れ"]
